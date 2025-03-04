@@ -5,9 +5,10 @@ import type { Document } from '../types/document';
 interface DocumentListProps {
   documents: Document[];
   onDownload: (docs: Document[]) => void;
+  onDownloadAndRename: (docs: Document[]) => void;
 }
 
-function DocumentList({ documents, onDownload }: DocumentListProps) {
+function DocumentList({ documents, onDownload, onDownloadAndRename }: DocumentListProps) {
   const [selectedDocs, setSelectedDocs] = useState<Document[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
@@ -34,6 +35,12 @@ function DocumentList({ documents, onDownload }: DocumentListProps) {
     }
   };
 
+  const handleDownloadAndRename = () => {
+    if (selectedDocs.length > 0) {
+      onDownloadAndRename(selectedDocs);
+    }
+  };
+
   return (
     <div className="document-list">
       <div className="document-list-header">
@@ -47,13 +54,22 @@ function DocumentList({ documents, onDownload }: DocumentListProps) {
             />
             Select All
           </label>
-          <button 
-            className="download-button"
-            onClick={handleDownload}
-            disabled={selectedDocs.length === 0}
-          >
-            Download Selected ({selectedDocs.length})
-          </button>
+          <div className="download-buttons">
+            <button 
+              className="download-button"
+              onClick={handleDownload}
+              disabled={selectedDocs.length === 0}
+            >
+              Download Selected ({selectedDocs.length})
+            </button>
+            <button 
+              className="download-rename-button"
+              onClick={handleDownloadAndRename}
+              disabled={selectedDocs.length === 0}
+            >
+              Download & Rename
+            </button>
+          </div>
         </div>
       </div>
       

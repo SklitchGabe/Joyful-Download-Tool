@@ -13,6 +13,25 @@
   --button-hover: #2a75ef;
   --error: #e63946;
   --success: #4caf50;
+  
+  --sdg-bg: #fafafa;
+  --sdg-surface: #ffffff;
+  --sdg-surface-lighter: #ffffff;
+  --sdg-accent-primary: #0A97D9;
+  --sdg-accent-secondary: #E5243B;
+  --sdg-text-primary: #333333;
+  --sdg-text-secondary: #666666;
+  --sdg-input-bg: #f9f9f9;
+  --sdg-input-border: #dddddd;
+  --sdg-input-text: #333333;
+  --sdg-button-primary: #4C9F38;
+  --sdg-button-hover: #56C02B;
+  --sdg-error: #DD1367;
+  --sdg-success: #4C9F38;
+  
+  --sdg-yellow: #FDB713;
+  --sdg-orange: #FD9D24;
+  --sdg-purple: #A21942;
 }
 
 body {
@@ -160,4 +179,115 @@ body {
 
 .read-the-docs {
   color: #888;
+}
+
+/* Theme toggle button styles - updated with fixed positioning */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000; /* Ensure it appears above other elements */
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* SDG theme version of the toggle button */
+.sdg-theme .theme-toggle {
+  background: linear-gradient(135deg, var(--sdg-accent-primary) 0%, var(--sdg-purple) 100%);
+  color: white;
+}
+
+/* SDG Theme styles */
+.sdg-theme {
+  --dark-bg: var(--sdg-bg);
+  --dark-surface: var(--sdg-surface);
+  --dark-surface-lighter: var(--sdg-surface-lighter);
+  --accent-primary: var(--sdg-accent-primary);
+  --accent-secondary: var(--sdg-accent-secondary);
+  --text-primary: var(--sdg-text-primary);
+  --text-secondary: var(--sdg-text-secondary);
+  --input-bg: var(--sdg-input-bg);
+  --input-border: var(--sdg-input-border);
+  --input-text: var(--sdg-input-text);
+  --button-primary: var(--sdg-button-primary);
+  --button-hover: var(--sdg-button-hover);
+  --error: var(--sdg-error);
+  --success: var(--sdg-success);
+}
+
+.sdg-theme .app-header {
+  background: linear-gradient(135deg, var(--sdg-accent-primary) 0%, var(--sdg-purple) 100%);
+}
+
+.sdg-theme .app-header h1 {
+  background: white;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sdg-theme .document-item {
+  border-left: 4px solid var(--sdg-accent-primary);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.sdg-theme .document-item.selected {
+  background: linear-gradient(135deg, rgba(10, 151, 217, 0.1) 0%, rgba(229, 36, 59, 0.1) 100%);
+  border-left: 4px solid var(--sdg-accent-secondary);
+}
+
+.sdg-theme .download-button {
+  background: linear-gradient(90deg, var(--sdg-button-primary), var(--sdg-yellow));
+}
+
+.sdg-theme .search-button {
+  background: linear-gradient(135deg, var(--sdg-accent-primary) 0%, var(--sdg-purple) 100%);
+}
+
+/* SDG theme gradient background */
+.sdg-theme body {
+  background-color: var(--sdg-bg);
+  color: var(--sdg-text-primary);
+  background-image: 
+    radial-gradient(circle at 100% 100%, rgba(229, 36, 59, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 0% 0%, rgba(76, 159, 56, 0.05) 0%, transparent 50%);
+}
+
+/* SDG colorful corners for document items */
+.sdg-theme .document-item::before {
+  border-color: transparent var(--sdg-yellow) transparent transparent;
+}
+
+/* Various components with SDG colors */
+.sdg-theme .document-item:nth-child(4n)::before {
+  border-color: transparent var(--sdg-accent-primary) transparent transparent;
+}
+
+.sdg-theme .document-item:nth-child(4n+1)::before {
+  border-color: transparent var(--sdg-accent-secondary) transparent transparent;
+}
+
+.sdg-theme .document-item:nth-child(4n+2)::before {
+  border-color: transparent var(--sdg-button-primary) transparent transparent;
+}
+
+.sdg-theme .document-item:nth-child(4n+3)::before {
+  border-color: transparent var(--sdg-orange) transparent transparent;
+}
+
+/* Make sure app container also reflects the background */
+.sdg-theme .app {
+  background-color: var(--sdg-bg);
 }

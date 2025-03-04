@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from worldbank_downloader import WorldBankDocDownloader
 import requests
-
+from document_renamer import rename_document_with_project_id
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
@@ -117,6 +117,49 @@ def download_documents():
         mimetype='application/zip',
         as_attachment=True,
         download_name='worldbank_documents.zip'
+    )
+
+@app.route('/api/download-and-rename', methods=['POST'])
+def download_and_rename_documents():
+    data = request.json
+    documents = data.get('documents', [])
+    
+    if not documents:
+        return jsonify({'error': 'No documents provided'}), 400
+    
+    # Create a unique download directory
+    download_dir = os.path.join(TEMP_DIR, f"download_{os.urandom(4).hex()}")
+    os.makedirs(download_dir, exist_ok=True)
+    
+    # Initialize downloader
+    downloader = WorldBankDocDownloader(output_dir=download_dir)
+    
+    # Download documents
+    results = downloader.bulk_download(documents)
+    
+    # Apply renaming logic to the downloaded documents
+    renamed_results = []
+    for result in results['success']:
+        file_path = result['path']
+        renamed_path = rename_document_with_project_id(file_path, download_dir)
+        renamed_results.append({
+            'doc_id': result['doc_id'],
+            'path': renamed_path or file_path  # Use original path if renaming failed
+        })
+    
+    # Create a zip file of all downloaded and renamed documents
+    zip_path = os.path.join(TEMP_DIR, f"worldbank_docs_renamed_{os.urandom(4).hex()}.zip")
+    with zipfile.ZipFile(zip_path, 'w') as zipf:
+        for result in renamed_results:
+            file_path = result['path']
+            zipf.write(file_path, os.path.basename(file_path))
+    
+    # Return the zip file
+    return send_file(
+        zip_path,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name='worldbank_documents_renamed.zip'
     )
 
 @app.route('/api/document-types', methods=['GET'])
