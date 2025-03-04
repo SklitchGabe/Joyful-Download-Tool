@@ -77,11 +77,16 @@
   appearance: auto;
   cursor: pointer;
   transition: border-color 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath fill='%23b3b3b3' d='M0 0l4 5 4-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
 }
 
 .select-input option {
   background-color: var(--dark-surface);
   color: var(--text-primary);
+  padding: 10px;
 }
 
 .search-button {
@@ -114,4 +119,15 @@
   .form-row .form-group {
     margin-bottom: 1.5rem;
   }
+}
+
+/* Style for dropdown hover */
+.select-input:hover {
+  border-color: var(--accent-primary);
+}
+
+/* Style for dropdown focus */
+.select-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.25);
 }
