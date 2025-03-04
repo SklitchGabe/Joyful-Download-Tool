@@ -1,5 +1,6 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import './SearchForm.css';
+import { documentTypes } from '../data/documentTypes';
 
 interface SearchParams {
   query: string;
@@ -28,7 +29,7 @@ function SearchForm({ onSearch }: SearchFormProps) {
     maxResults: 100
   });
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -86,14 +87,19 @@ function SearchForm({ onSearch }: SearchFormProps) {
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="docType">Document Type</label>
-            <input
-              type="text"
+            <select
               id="docType"
               name="docType"
               value={formData.docType}
               onChange={handleChange}
-              placeholder="Document type"
-            />
+              className="select-input"
+            >
+              {documentTypes.map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
           </div>
           
           <div className="form-group">

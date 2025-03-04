@@ -1,5 +1,10 @@
 /* DocumentList.css */
 .document-list {
+    background-color: var(--dark-surface);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--input-border);
     margin-top: 30px;
   }
   
@@ -11,14 +16,22 @@
   }
   
   .document-list-header h2 {
-    margin: 0;
-    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent-primary);
+  }
+  
+  .document-count {
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
   }
   
   .document-actions {
+    margin-top: 0.75rem;
     display: flex;
-    align-items: center;
-    gap: 20px;
+    gap: 0.75rem;
   }
   
   .document-actions label {
@@ -29,21 +42,27 @@
   }
   
   .download-button {
-    background-color: #27ae60;
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: 10px 20px;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
   
   .download-button:hover {
-    background-color: #219653;
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   }
   
   .download-button:disabled {
-    background-color: #a0a0a0;
+    background: linear-gradient(90deg, #95a5a6, #7f8c8d);
+    transform: none;
+    box-shadow: none;
     cursor: not-allowed;
   }
   
@@ -54,21 +73,24 @@
   }
   
   .document-item {
-    display: flex;
-    padding: 15px;
-    border: 1px solid #e9ecef;
-    border-radius: 4px;
-    transition: all 0.3s;
+    background-color: var(--dark-surface-lighter);
+    margin-bottom: 1rem;
+    padding: 1.25rem;
+    border-radius: 6px;
+    border-left: 4px solid var(--accent-primary);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
   }
   
   .document-item:hover {
-    border-color: #3498db;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
   }
   
   .document-item.selected {
-    background-color: #e3f2fd;
-    border-color: #3498db;
+    background: linear-gradient(135deg, rgba(58, 134, 255, 0.2) 0%, rgba(131, 56, 236, 0.2) 100%);
+    border-left: 4px solid var(--accent-secondary);
+    box-shadow: 0 0 15px rgba(58, 134, 255, 0.2);
   }
   
   .document-checkbox {
@@ -78,6 +100,13 @@
     padding-top: 3px;
   }
   
+  .document-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-secondary);
+    cursor: pointer;
+  }
+  
   .document-info {
     flex: 1;
   }
@@ -85,19 +114,128 @@
   .document-info h3 {
     margin-top: 0;
     margin-bottom: 10px;
-    color: #2c3e50;
+    color: var(--text-secondary);
+  }
+  
+  .document-item.selected .document-info h3 {
+    color: var(--accent-primary);
+    text-shadow: 0 0 8px rgba(58, 134, 255, 0.3);
   }
   
   .document-meta {
     display: flex;
-    gap: 15px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: #6c757d;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+  
+  .document-title {
+    font-size: 1.1rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  
+  .document-item.selected .document-title {
+    color: var(--accent-primary);
+    text-shadow: 0 0 8px rgba(58, 134, 255, 0.3);
   }
   
   .document-abstract {
-    margin: 0;
-    color: #495057;
+    margin: 0.5rem 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
     line-height: 1.5;
+  }
+  
+  .document-item.selected .document-abstract {
+    color: var(--text-primary);
+  }
+  
+  .document-actions a, 
+  .document-actions button {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s ease;
+  }
+  
+  .document-actions a {
+    background-color: var(--dark-surface);
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
+  }
+  
+  .document-actions a:hover {
+    background-color: rgba(58, 134, 255, 0.1);
+  }
+  
+  .document-actions button {
+    background-color: var(--accent-primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .document-actions button:hover {
+    background-color: var(--button-hover);
+  }
+  
+  .bulk-actions {
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .bulk-actions button {
+    padding: 0.5rem 1rem;
+    background-color: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .bulk-actions button:hover {
+    background-color: var(--button-hover);
+  }
+  
+  .select-all-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .select-all-container input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    accent-color: var(--accent-secondary);
+    cursor: pointer;
+  }
+  
+  .select-all-container label {
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  .document-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 20px 20px 0;
+    border-color: transparent var(--accent-secondary) transparent transparent;
   }

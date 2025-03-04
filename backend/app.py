@@ -5,6 +5,7 @@ import zipfile
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from worldbank_downloader import WorldBankDocDownloader
+import requests
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -117,6 +118,33 @@ def download_documents():
         as_attachment=True,
         download_name='worldbank_documents.zip'
     )
+
+@app.route('/api/document-types', methods=['GET'])
+def get_document_types():
+    """Get available document types from the World Bank API"""
+    try:
+        # Make request to the World Bank API for document type facets
+        response = requests.get(
+            "https://search.worldbank.org/api/v3/wds",
+            params={
+                "format": "json",
+                "fct": "docty",
+                "rows": 0
+            }
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        # Extract document types from facets
+        facets = data.get('facets', {}).get('docty', [])
+        document_types = [{"value": facet['name'], "label": facet['name']} for facet in facets]
+        
+        # Add an "All Document Types" option at the beginning
+        document_types.insert(0, {"value": "", "label": "All Document Types"})
+        
+        return jsonify(document_types)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
