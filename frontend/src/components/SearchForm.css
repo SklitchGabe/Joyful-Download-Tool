@@ -92,22 +92,26 @@
 .search-button {
   display: block;
   width: 100%;
-  max-width: 200px;
-  margin: 0 auto;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  padding: 1rem;
+  margin-top: 2rem;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .search-button:hover {
-  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
   transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+.search-button:active {
+  transform: translateY(1px);
 }
 
 @media (max-width: 768px) {
@@ -130,4 +134,19 @@
 .select-input:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.25);
+}
+
+.form-description {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.form-hint {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }

@@ -5,6 +5,7 @@ from tqdm import tqdm
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import time
+from datetime import datetime
 
 class WorldBankDocDownloader:
     """Tool to bulk download documents from the World Bank API."""
@@ -19,67 +20,89 @@ class WorldBankDocDownloader:
         self.rate_limit = rate_limit
         
         # Create output directory if it doesn't exist
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        os.makedirs(output_dir, exist_ok=True)
     
     def search_documents(self, query="", doc_type=None, country=None, topic=None, 
                         from_date=None, to_date=None, language=None, max_results=100):
-        """Search for documents based on criteria."""
-        params = {
-            "query": query,
-            "rows": 50,  # Results per page
-            "format": "json"
-        }
-        
-        # Add optional filters
-        if doc_type:
-            params["doctype"] = doc_type
-        if country:
-            params["country"] = country
-        if topic:
-            params["topic"] = topic
-        if from_date:
-            params["from_date"] = from_date
-        if to_date:
-            params["to_date"] = to_date
-        if language:
-            params["lang"] = language
-        
-        all_documents = []
+        """Search for documents using World Bank API"""
+        documents = []
         page = 1
-        total_pages = 1  # Will be updated after first request
+        rows_per_page = min(max_results, 100)  # API limit is 100 per page
         
-        # Fetch documents with pagination
-        with tqdm(desc="Fetching document metadata", unit="page") as pbar:
-            while page <= total_pages and len(all_documents) < max_results:
-                params["page"] = page
+        # Build filter parameters
+        filters = {}
+        
+        if country and country.strip():
+            filters['country'] = country
+            
+        if topic and topic.strip():
+            filters['topicval'] = topic
+            
+        if doc_type and doc_type.strip():
+            filters['doctype'] = doc_type
+            
+        if language and language.strip():
+            filters['language'] = language
+            
+        # Handle date range
+        if from_date or to_date:
+            date_range = []
+            
+            if from_date:
+                date_range.append(from_date)
+            else:
+                date_range.append('1900-01-01')  # Default start date
+                
+            if to_date:
+                date_range.append(to_date)
+            else:
+                date_range.append(datetime.now().strftime('%Y-%m-%d'))  # Default end date
+                
+            # Format date range as proper query parameter
+            filters['frmdt'] = date_range[0]
+            filters['todt'] = date_range[1]
+            
+        print(f"Fetching document metadata:", end=' ')
+        with tqdm(total=None, unit='page') as pbar:
+            while len(documents) < max_results:
                 try:
+                    # Build the API request parameters
+                    params = {
+                        'format': 'json',
+                        'q': query,  # Changed from qterm to q
+                        'rows': rows_per_page,
+                        'page': page
+                    }
+                    
+                    # Add filters to the params
+                    params.update(filters)
+                    
+                    # Make the API request
                     response = requests.get(self.BASE_URL, params=params)
                     response.raise_for_status()
                     data = response.json()
                     
-                    # Update pagination info
-                    if page == 1:
-                        total_count = data.get("total", 0)
-                        total_pages = (total_count + params["rows"] - 1) // params["rows"]
-                        pbar.total = min(total_pages, (max_results + params["rows"] - 1) // params["rows"])
-                    
-                    # Extract document info
-                    documents = data.get("documents", [])
-                    all_documents.extend(documents[:max(0, max_results - len(all_documents))])
-                    
+                    # Extract results
+                    results = data.get('documents', [])
+                    if not results:
+                        break
+                        
+                    documents.extend(results)
                     page += 1
                     pbar.update(1)
                     
-                    # Honor rate limits
-                    time.sleep(self.rate_limit)
-                    
+                    # Check if we've reached the last page
+                    if len(results) < rows_per_page:
+                        break
+                        
                 except Exception as e:
                     print(f"Error fetching page {page}: {str(e)}")
                     break
-        
-        print(f"Found {len(all_documents)} documents")
-        return all_documents
+                    
+        # Trim to max_results
+        documents = documents[:max_results]
+        print(f"Found {len(documents)} documents")
+        return documents
     
     def download_document(self, doc):
         """Download a single document."""

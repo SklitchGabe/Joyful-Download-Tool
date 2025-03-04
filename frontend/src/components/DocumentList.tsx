@@ -1,17 +1,6 @@
 import { useState } from 'react';
 import './DocumentList.css';
-
-interface Document {
-  id: string;
-  display_title?: string;
-  title?: string;
-  docdt?: string;
-  count?: string;
-  abstracts?: {
-    'cdata!'?: string;
-  };
-  project_id?: string;
-}
+import type { Document } from '../types/document';
 
 interface DocumentListProps {
   documents: Document[];

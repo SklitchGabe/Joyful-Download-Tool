@@ -1,97 +1,54 @@
 import { useState } from 'react'
 import './App.css'
-import SearchForm from './components/SearchForm'
 import ProjectSearchForm from './components/ProjectSearchForm'
 import DocumentList from './components/DocumentList'
 
-// Define types for our document structure
-interface Document {
-  id: string
-  display_title?: string
-  title?: string
-  docdt?: string
-  count?: string
-  abstracts?: {
-    'cdata!'?: string
-  }
-  pdfurl?: string
-  guid?: string
-  url?: string
-  project_id?: string
-}
+// Import the Document interface from DocumentList
+import type { Document } from './types/document'
 
 // Define search parameter types
-interface SearchParams {
-  query?: string
-  country?: string
-  topic?: string
-  docType?: string
-  fromDate?: string
-  toDate?: string
-  language?: string
-  maxResults?: number
-}
-
 interface ProjectSearchParams {
-  projectIds: string[]
-  docType?: string
-  maxPerProject?: number
+  projectIds: string
+  docType: string
+  maxPerProject: number
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'search' | 'project'>('search')
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  const [downloadProgress, setDownloadProgress] = useState<string | null>(null)
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-  const handleSearch = async (searchParams: SearchParams) => {
+  const handleProjectSearch = async (params: ProjectSearchParams) => {
     setLoading(true)
     setError(null)
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(searchParams),
-      })
+      // Parse project IDs from the text area
+      const projectIds = params.projectIds
+        .split(/[\s,]+/)
+        .map(id => id.trim())
+        .filter(id => id.length > 0)
       
-      if (!response.ok) {
-        throw new Error('Search failed')
-      }
-      
-      const data = await response.json()
-      setDocuments(data.documents)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred')
-      setDocuments([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleProjectSearch = async (searchParams: ProjectSearchParams) => {
-    setLoading(true)
-    setError(null)
-    
-    try {
       const response = await fetch(`${API_BASE_URL}/api/project-search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(searchParams),
+        body: JSON.stringify({
+          projectIds,
+          docType: params.docType,
+          maxPerProject: params.maxPerProject
+        }),
       })
       
+      const data = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Project search failed')
+        throw new Error(data.error || 'Failed to search for documents')
       }
       
-      const data = await response.json()
       setDocuments(data.documents)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred')
@@ -102,8 +59,6 @@ function App() {
   }
 
   const handleDownload = async (selectedDocs: Document[]) => {
-    setDownloadProgress('Preparing download...')
-    
     try {
       const response = await fetch(`${API_BASE_URL}/api/download`, {
         method: 'POST',
@@ -114,71 +69,40 @@ function App() {
       })
       
       if (!response.ok) {
-        throw new Error('Download failed')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to download documents')
       }
       
-      // Create a download link for the zip file
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'worldbank_documents.zip'
+      a.download = 'world_bank_documents.zip'
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
-      setDownloadProgress(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred')
-      setDownloadProgress(null)
     }
   }
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>World Bank Document Downloader</h1>
-        <div className="tabs">
-          <button 
-            className={activeTab === 'search' ? 'active' : ''} 
-            onClick={() => setActiveTab('search')}
-          >
-            Search by Keywords
-          </button>
-          <button 
-            className={activeTab === 'project' ? 'active' : ''} 
-            onClick={() => setActiveTab('project')}
-          >
-            Search by Project IDs
-          </button>
-        </div>
+        <h1>World Bank Document Explorer</h1>
       </header>
       
       <main className="app-content">
-        {activeTab === 'search' ? (
-          <SearchForm onSearch={handleSearch} />
-        ) : (
-          <ProjectSearchForm onSearch={handleProjectSearch} />
-        )}
+        <ProjectSearchForm onSearch={handleProjectSearch} />
         
         {loading && <div className="loading">Loading documents...</div>}
         
-        {error && <div className="error">Error: {error}</div>}
+        {error && <div className="error-message">{error}</div>}
         
-        {downloadProgress && (
-          <div className="download-progress">{downloadProgress}</div>
-        )}
-        
-        {documents.length > 0 && (
-          <DocumentList 
-            documents={documents} 
-            onDownload={handleDownload} 
-          />
+        {!loading && documents.length > 0 && (
+          <DocumentList documents={documents} onDownload={handleDownload} />
         )}
       </main>
-      
-      <footer className="app-footer">
-        <p>Powered by World Bank Documents & Reports API</p>
-      </footer>
     </div>
   )
 }
