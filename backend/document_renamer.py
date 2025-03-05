@@ -42,32 +42,43 @@ def extract_project_id(pdf_path: str, max_pages: int = 10) -> Optional[str]:
 
 def rename_document_with_project_id(original_path: str, output_dir: str) -> Optional[str]:
     """
-    Rename a PDF file based on the project ID extracted from its content.
+    Rename a document file based on the project ID extracted from its content.
     
     Args:
-        original_path: Path to the original PDF file
+        original_path: Path to the original file
         output_dir: Directory to place the renamed file
         
     Returns:
         Path to the renamed file if successful, original path if no ID found
     """
     try:
-        # Extract project ID from the document
-        project_id = extract_project_id(original_path)
+        # Get file extension from original path
+        file_extension = Path(original_path).suffix.lower()
+        
+        # Extract project ID from the document (only for PDFs currently)
+        project_id = None
+        if file_extension == '.pdf':
+            project_id = extract_project_id(original_path)
+        else:
+            # For non-PDF files, try to extract from filename or return original
+            # You might implement docx/doc text extraction in the future
+            import re
+            match = re.search(r'(P\d{6})', Path(original_path).stem)
+            if match:
+                project_id = match.group(1)
         
         if project_id:
             # Create the output directory if it doesn't exist
             Path(output_dir).mkdir(parents=True, exist_ok=True)
             
             # Create new filename with project ID
-            original_filename = Path(original_path).name
-            new_filename = f"{project_id}.pdf"
+            new_filename = f"{project_id}{file_extension}"
             new_path = Path(output_dir) / new_filename
             
             # Handle duplicate filenames
             counter = 1
             while new_path.exists():
-                new_filename = f"{project_id}_{counter}.pdf"
+                new_filename = f"{project_id}_{counter}{file_extension}"
                 new_path = Path(output_dir) / new_filename
                 counter += 1
             
@@ -82,4 +93,4 @@ def rename_document_with_project_id(original_path: str, output_dir: str) -> Opti
             
     except Exception as e:
         print(f"Error renaming document {original_path}: {str(e)}")
-        return original_path 
+        return original_path

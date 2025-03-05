@@ -109,7 +109,10 @@ def download_documents():
     with zipfile.ZipFile(zip_path, 'w') as zipf:
         for result in results['success']:
             file_path = result['path']
-            zipf.write(file_path, os.path.basename(file_path))
+            # If format info is available, include it in the archive filename
+            format_info = result.get('format', 'pdf')  # Default to pdf if not specified
+            archive_name = os.path.basename(file_path)
+            zipf.write(file_path, archive_name)
     
     # Return the zip file
     return send_file(

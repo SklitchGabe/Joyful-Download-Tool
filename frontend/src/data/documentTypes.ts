@@ -22,5 +22,7 @@ export const documentTypes = [
   { value: "Minutes", label: "Minutes" },
   { value: "Financial Statement", label: "Financial Statement" },
   { value: "Memorandum & Recommendation", label: "Memorandum & Recommendation" },
-  { value: "Agreement", label: "Agreement" }
+  { value: "Agreement", label: "Agreement" },
+  { value: "Implementation Completion and Results Report", label: "Implementation Completion and Results Report" },
+  { value: "Implementation Completion Report Review", label: "Implementation Completion Report Review" }
 ]; 
