@@ -1,0 +1,35 @@
+.search-toggle {
+  display: flex;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.toggle-button {
+  flex: 1;
+  padding: 10px 20px;
+  background-color: var(--dark-surface-lighter);
+  color: var(--text-primary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.toggle-button.active {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.toggle-button:first-child {
+  border-right: 1px solid var(--dark-surface);
+}
+
+.toggle-button:hover:not(.active) {
+  background-color: var(--dark-surface);
+}
+
+/* Adjust DOCX-specific styling */
+.toggle-button.active[data-type="docx"] {
+  background: linear-gradient(135deg, #2a75ef 0%, #3a86ff 100%);
+} 

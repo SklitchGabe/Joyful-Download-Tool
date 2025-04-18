@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './DocumentList.css';
-import type { Document } from '../types/document';
+import { Document } from '../types/document';
 
 interface DocumentListProps {
   documents: Document[];

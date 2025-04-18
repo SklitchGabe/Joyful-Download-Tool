@@ -24,5 +24,7 @@ export const documentTypes = [
   { value: "Memorandum & Recommendation", label: "Memorandum & Recommendation" },
   { value: "Agreement", label: "Agreement" },
   { value: "Implementation Completion and Results Report", label: "Implementation Completion and Results Report" },
-  { value: "Implementation Completion Report Review", label: "Implementation Completion Report Review" }
+  { value: "Implementation Completion Report Review", label: "Implementation Completion Report Review" },
+  { value: "Report", label: "Report" },
+  { value: "Poverty Assessment", label: "Poverty Assessment" }
 ]; 

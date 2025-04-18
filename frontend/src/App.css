@@ -13,25 +13,6 @@
   --button-hover: #2a75ef;
   --error: #e63946;
   --success: #4caf50;
-  
-  --sdg-bg: #fafafa;
-  --sdg-surface: #ffffff;
-  --sdg-surface-lighter: #ffffff;
-  --sdg-accent-primary: #0A97D9;
-  --sdg-accent-secondary: #E5243B;
-  --sdg-text-primary: #333333;
-  --sdg-text-secondary: #666666;
-  --sdg-input-bg: #f9f9f9;
-  --sdg-input-border: #dddddd;
-  --sdg-input-text: #333333;
-  --sdg-button-primary: #4C9F38;
-  --sdg-button-hover: #56C02B;
-  --sdg-error: #DD1367;
-  --sdg-success: #4C9F38;
-  
-  --sdg-yellow: #FDB713;
-  --sdg-orange: #FD9D24;
-  --sdg-purple: #A21942;
 }
 
 body {
@@ -290,4 +271,69 @@ body {
 /* Make sure app container also reflects the background */
 .sdg-theme .app {
   background-color: var(--sdg-bg);
+}
+
+/* Add these styles to your existing App.css */
+.search-toggle {
+  display: flex;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.toggle-button {
+  flex: 1;
+  padding: 10px 20px;
+  background-color: var(--dark-surface-lighter);
+  color: var(--text-primary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.toggle-button.active {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.toggle-button:first-child {
+  border-right: 1px solid var(--dark-surface);
+}
+
+.toggle-button:hover:not(.active) {
+  background-color: var(--dark-surface);
+}
+
+/* Adjust DOCX-specific styling */
+.toggle-button.active[data-type="docx"] {
+  background: linear-gradient(135deg, #2a75ef 0%, #3a86ff 100%);
+}
+
+/* Add colorful markers for DOCX tab */
+.toggle-button[data-type="docx"] {
+  border-left: 3px solid #2a75ef;
+}
+
+.toggle-button[data-type="pdf"] {
+  border-left: 3px solid var(--accent-primary);
+}
+
+/* Loading indicator */
+.loading {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+
+/* Error message */
+.error-message {
+  background-color: rgba(255, 87, 87, 0.1);
+  border-left: 4px solid var(--error);
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  color: var(--error);
 }

@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import './App.css'
 import ProjectSearchForm from './components/ProjectSearchForm'
+import DocxSearchForm from './components/DocxSearchForm'
 import DocumentList from './components/DocumentList'
+import { ThemeProvider, useTheme } from './components/ThemeContent'   
 
-// Import the Document interface
-import type { Document } from './types/document'
+// Import the Document interface from DocumentList
+import type { Document } from './components/DocumentList'
 
 // Define search parameter types
 interface ProjectSearchParams {
@@ -13,10 +15,24 @@ interface ProjectSearchParams {
   maxPerProject: number
 }
 
-function App() {
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button 
+      className={`theme-toggle ${theme === 'sdg' ? 'sdg-theme' : ''}`} 
+      onClick={toggleTheme}
+    >
+      {theme === 'sdg' ? 'Switch to Dark Theme' : 'Switch to SDG Theme'}
+    </button>
+  );
+}
+
+function AppContent() {
+  const { theme } = useTheme();
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeSearchType, setActiveSearchType] = useState<'pdf' | 'docx'>('pdf')
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -47,6 +63,44 @@ function App() {
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to search for documents')
+      }
+      
+      setDocuments(data.documents)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred')
+      setDocuments([])
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  const handleDocxProjectSearch = async (params: ProjectSearchParams) => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      // Parse project IDs from the text area
+      const projectIds = params.projectIds
+        .split(/[\s,]+/)
+        .map(id => id.trim())
+        .filter(id => id.length > 0)
+      
+      const response = await fetch(`${API_BASE_URL}/api/docx-project-search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectIds,
+          docType: params.docType,
+          maxPerProject: params.maxPerProject
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to search for DOCX documents')
       }
       
       setDocuments(data.documents)
@@ -114,14 +168,40 @@ function App() {
     }
   }
 
+  const toggleSearchType = (type: 'pdf' | 'docx') => {
+    setActiveSearchType(type);
+    setDocuments([]);
+  };
+
   return (
-    <div className="app">
+    <div className={`app ${theme === 'sdg' ? 'sdg-theme' : ''}`}>
+      <ThemeToggle />
+      
       <header className="app-header">
         <h1>World Bank Document Explorer</h1>
       </header>
       
       <main className="app-content">
-        <ProjectSearchForm onSearch={handleProjectSearch} />
+        <div className="search-toggle">
+          <button 
+            className={`toggle-button ${activeSearchType === 'pdf' ? 'active' : ''}`} 
+            onClick={() => toggleSearchType('pdf')}
+          >
+            PDF Search
+          </button>
+          <button 
+            className={`toggle-button ${activeSearchType === 'docx' ? 'active' : ''}`} 
+            onClick={() => toggleSearchType('docx')}
+          >
+            DOCX Search
+          </button>
+        </div>
+        
+        {activeSearchType === 'pdf' ? (
+          <ProjectSearchForm onSearch={handleProjectSearch} />
+        ) : (
+          <DocxSearchForm onSearch={handleDocxProjectSearch} />
+        )}
         
         {loading && <div className="loading">Loading documents...</div>}
         
@@ -139,4 +219,12 @@ function App() {
   )
 }
 
-export default App
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  )
+}
+
+export default App 
