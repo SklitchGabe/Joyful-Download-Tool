@@ -1,8 +1,6 @@
 # World Bank Document Explorer
 
-A user-friendly application to search, download, and organize World Bank project documents.
-
-![World Bank Document Explorer](https://via.placeholder.com/800x400?text=World+Bank+Document+Explorer)
+A user-friendly application to search, download, and organize *PUBLIC* World Bank project documents.
 
 ## Overview
 
