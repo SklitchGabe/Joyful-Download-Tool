@@ -1,5 +1,5 @@
 import re
-import PyPDF2
+from pypdf import PdfReader as PdfReader
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -17,7 +17,7 @@ def extract_project_id(pdf_path: str, max_pages: int = 10) -> Optional[str]:
     """
     try:
         with open(pdf_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
+            reader = PdfReader(file)
             # Limit the number of pages to search
             pages_to_search = min(len(reader.pages), max_pages)
             

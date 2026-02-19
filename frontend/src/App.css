@@ -114,7 +114,7 @@ body {
   border-top: 1px solid var(--input-border);
 }
 
-.loading, .error, .download-progress {
+.loading, .error, .error-message, .warning-message, .download-progress {
   margin: 1rem 0;
   padding: 1rem;
   border-radius: 4px;
@@ -126,10 +126,22 @@ body {
   color: var(--text-primary);
 }
 
-.error {
+.error, .error-message {
   background-color: rgba(230, 57, 70, 0.2);
   color: var(--error);
   border: 1px solid var(--error);
+}
+
+.warning-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.warning-message {
+  background-color: rgba(253, 183, 19, 0.15);
+  color: #fdb713;
+  border: 1px solid #fdb713;
 }
 
 .download-progress {

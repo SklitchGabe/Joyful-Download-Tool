@@ -22,46 +22,34 @@ class WorldBankDocDownloader:
         # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
     
-    def search_documents(self, query="", doc_type=None, country=None, topic=None, 
+    def search_documents(self, query="", doc_type=None, country=None, topic=None,
                         from_date=None, to_date=None, language=None, max_results=100):
         """Search for documents using World Bank API"""
         documents = []
-        page = 1
+        offset = 0  # API uses offset-based pagination via the 'os' parameter
         rows_per_page = min(max_results, 100)  # API limit is 100 per page
-        
+
         # Build filter parameters
         filters = {}
-        
+
         if country and country.strip():
-            filters['country'] = country
-            
+            filters['count_exact'] = country
+
         if topic and topic.strip():
-            filters['topicval'] = topic
-            
+            filters['theme_exact'] = topic
+
         if doc_type and doc_type.strip():
-            filters['doctype'] = doc_type
-            
+            filters['docty_exact'] = doc_type
+
         if language and language.strip():
-            filters['language'] = language
-            
+            filters['lang_exact'] = language
+
         # Handle date range
-        if from_date or to_date:
-            date_range = []
-            
-            if from_date:
-                date_range.append(from_date)
-            else:
-                date_range.append('1900-01-01')  # Default start date
-                
-            if to_date:
-                date_range.append(to_date)
-            else:
-                date_range.append(datetime.now().strftime('%Y-%m-%d'))  # Default end date
-                
-            # Format date range as proper query parameter
-            filters['frmdt'] = date_range[0]
-            filters['todt'] = date_range[1]
-            
+        if from_date:
+            filters['strdate'] = from_date
+        if to_date:
+            filters['enddate'] = to_date
+
         print(f"Fetching document metadata:", end=' ')
         with tqdm(total=None, unit='page') as pbar:
             while len(documents) < max_results:
@@ -69,36 +57,42 @@ class WorldBankDocDownloader:
                     # Build the API request parameters
                     params = {
                         'format': 'json',
-                        'q': query,  # Changed from qterm to q
+                        'qterm': query,
                         'rows': rows_per_page,
-                        'page': page
+                        'os': offset
                     }
-                    
+
                     # Add filters to the params
                     params.update(filters)
-                    
+
                     # Make the API request
                     response = requests.get(self.BASE_URL, params=params)
                     response.raise_for_status()
                     data = response.json()
-                    
-                    # Extract results
-                    results = data.get('documents', [])
+
+                    # Extract results — API v3 returns 'documents' as a dict keyed by document ID
+                    documents_raw = data.get('documents', {})
+                    if isinstance(documents_raw, dict):
+                        documents_raw.pop('facets', None)
+                        results = list(documents_raw.values())
+                    else:
+                        results = documents_raw  # fallback for unexpected list response
+
                     if not results:
                         break
-                        
+
                     documents.extend(results)
-                    page += 1
+                    offset += rows_per_page
                     pbar.update(1)
-                    
+
                     # Check if we've reached the last page
                     if len(results) < rows_per_page:
                         break
-                        
+
                 except Exception as e:
-                    print(f"Error fetching page {page}: {str(e)}")
+                    print(f"Error fetching at offset {offset}: {str(e)}")
                     break
-                    
+
         # Trim to max_results
         documents = documents[:max_results]
         print(f"Found {len(documents)} documents")
@@ -284,11 +278,7 @@ class WorldBankDocDownloader:
             
             # Add document type filter if specified
             if doc_type:
-                params["docty"] = doc_type
-                params["query"] = f"\"{doc_type}\""
-                
-                print(f"Searching for document type: {doc_type} for project {project_id}")
-                print(f"Using parameters: {params}")
+                params["docty_exact"] = doc_type
                 
             documents = self._fetch_documents(params, max_results, rate_limit)
             all_documents[project_id] = documents
