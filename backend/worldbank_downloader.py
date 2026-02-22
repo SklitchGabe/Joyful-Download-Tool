@@ -6,6 +6,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import time
 from datetime import datetime
+from document_renamer import extract_project_id, detect_doc_prefix
 
 class WorldBankDocDownloader:
     """Tool to bulk download documents from the World Bank API."""
@@ -152,10 +153,43 @@ class WorldBankDocDownloader:
                         # Try next format
                         continue
                     
-                    # Create filename with appropriate extension
-                    safe_title = "".join(c if c.isalnum() else "_" for c in title)
-                    filename = f"{doc_id}_{safe_title[:50]}.{file_format}"
+                    # Derive filename from metadata — project_id is attached by the
+                    # caller (app.py) and reflects the exact queried project.
+                    project_id = doc.get('project_id', '')
+                    # Cross-check against the projectid the WB API itself reports
+                    # for this document. If they disagree, something unexpected
+                    # happened and we must not label the file with either ID.
+                    api_project_id = doc.get('projectid', '')
+                    if project_id and api_project_id and project_id.upper() != api_project_id.upper():
+                        print(
+                            f"Warning: project ID mismatch for document {doc_id} — "
+                            f"queried {project_id!r} but API reports {api_project_id!r}. "
+                            f"Falling back to generic filename."
+                        )
+                        project_id = ''
+
+                    docty = doc.get('docty', '')
+                    if docty in ('Project Appraisal Document', 'Program Appraisal Document'):
+                        prefix = 'PAD'
+                    elif docty == 'Project Paper':
+                        prefix = 'PP'
+                    else:
+                        prefix = None
+
+                    if prefix and project_id:
+                        stem = f"{prefix}_{project_id}"
+                    else:
+                        safe_title = "".join(c if c.isalnum() else "_" for c in title)
+                        stem = f"{doc_id}_{safe_title[:50]}"
+
+                    filename = f"{stem}.{file_format}"
                     file_path = os.path.join(self.output_dir, filename)
+                    # Avoid collisions if multiple docs share the same type+project
+                    counter = 1
+                    while os.path.exists(file_path):
+                        filename = f"{stem}_{counter}.{file_format}"
+                        file_path = os.path.join(self.output_dir, filename)
+                        counter += 1
                     
                     # Download the file
                     response = requests.get(file_url, stream=True)
@@ -224,11 +258,33 @@ class WorldBankDocDownloader:
                         print(f"Downloaded file is not a valid {file_format.upper()}")
                         os.remove(file_path)
                         continue
-                    
+
+                    # Fallback: if metadata didn't produce a structured name, scan
+                    # the PDF itself for a project ID and document type.
+                    # Only attempted for PDFs — the text is reliably readable.
+                    if file_format == 'pdf' and not (prefix and project_id):
+                        pdf_pid    = extract_project_id(file_path, max_pages=10)
+                        pdf_prefix = detect_doc_prefix(file_path, max_pages=3) if pdf_pid else None
+                        if pdf_pid and pdf_prefix:
+                            print(
+                                f"PDF fallback naming for document {doc_id}: "
+                                f"{pdf_prefix}_{pdf_pid}"
+                            )
+                            new_stem = f"{pdf_prefix}_{pdf_pid}"
+                            new_filename = f"{new_stem}.pdf"
+                            new_path = os.path.join(self.output_dir, new_filename)
+                            counter = 1
+                            while os.path.exists(new_path):
+                                new_filename = f"{new_stem}_{counter}.pdf"
+                                new_path = os.path.join(self.output_dir, new_filename)
+                                counter += 1
+                            os.rename(file_path, new_path)
+                            file_path = new_path
+
                     # If we got here, we have a valid file
                     return {
-                        "success": True, 
-                        "doc_id": doc_id, 
+                        "success": True,
+                        "doc_id": doc_id,
                         "path": file_path,
                         "format": file_format
                     }

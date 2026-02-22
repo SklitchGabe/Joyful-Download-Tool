@@ -3,6 +3,7 @@ import './SearchForm.css';
 
 interface ProjectSearchParams {
   projectIds: string;
+  includeEquivalents: boolean;
 }
 
 interface ProjectSearchFormProps {
@@ -12,10 +13,13 @@ interface ProjectSearchFormProps {
 
 function ProjectSearchForm({ onSearch, loading }: ProjectSearchFormProps) {
   const [projectIds, setProjectIds] = useState('');
+  const [includeEquivalents, setIncludeEquivalents] = useState(false);
+
+  const idCount = projectIds.split(/[\s,]+/).filter(s => s.trim().length > 0).length;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    onSearch({ projectIds });
+    onSearch({ projectIds, includeEquivalents });
   };
 
   return (
@@ -28,7 +32,10 @@ function ProjectSearchForm({ onSearch, loading }: ProjectSearchFormProps) {
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="projectIds">Project IDs</label>
+          <label htmlFor="projectIds">
+            Project IDs
+            {idCount > 0 && <span className="id-count">{idCount} entered</span>}
+          </label>
           <textarea
             id="projectIds"
             name="projectIds"
@@ -38,6 +45,33 @@ function ProjectSearchForm({ onSearch, loading }: ProjectSearchFormProps) {
             rows={8}
             disabled={loading}
           />
+        </div>
+
+        <div className="form-group doc-type-toggle">
+          <label>Document scope</label>
+          <div className="toggle-options">
+            <label className="toggle-option">
+              <input
+                type="radio"
+                name="docScope"
+                checked={!includeEquivalents}
+                onChange={() => setIncludeEquivalents(false)}
+                disabled={loading}
+              />
+              PAD only
+            </label>
+            <label className="toggle-option">
+              <input
+                type="radio"
+                name="docScope"
+                checked={includeEquivalents}
+                onChange={() => setIncludeEquivalents(true)}
+                disabled={loading}
+              />
+              PAD + equivalents
+              <span className="toggle-hint"> (includes Program Appraisals and Project Papers)</span>
+            </label>
+          </div>
         </div>
 
         <button type="submit" className="search-button" disabled={loading || !projectIds.trim()}>

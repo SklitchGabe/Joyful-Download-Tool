@@ -7,6 +7,7 @@ import type { Document } from './types/document'
 
 interface ProjectSearchParams {
   projectIds: string;
+  includeEquivalents: boolean;
 }
 
 function ThemeToggle() {
@@ -52,7 +53,7 @@ function AppContent() {
       const response = await fetch(`${API_BASE_URL}/api/search-pads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectIds }),
+        body: JSON.stringify({ projectIds, includeEquivalents: params.includeEquivalents }),
       })
 
       const data = await response.json()

@@ -41,15 +41,30 @@ def search_pads():
             'invalid_ids': invalid_ids,
         }), 400
 
-    downloader = WorldBankDocDownloader(output_dir=TEMP_DIR)
-    project_documents = downloader.search_by_project_ids(
-        project_ids=valid_ids,
-        doc_type='Project Appraisal Document',
-        max_results=5,
+    include_equivalents = bool(data.get('includeEquivalents', False))
+    doc_types = (
+        ['Project Appraisal Document', 'Program Appraisal Document', 'Project Paper']
+        if include_equivalents
+        else ['Project Appraisal Document']
     )
 
+    downloader = WorldBankDocDownloader(output_dir=TEMP_DIR)
+
+    # Collect results across all doc types, deduplicated per project by doc id
+    merged: dict[str, dict] = {pid: {} for pid in valid_ids}
+    for doc_type in doc_types:
+        results = downloader.search_by_project_ids(
+            project_ids=valid_ids,
+            doc_type=doc_type,
+            max_results=5,
+        )
+        for pid, docs in results.items():
+            for doc in docs:
+                merged[pid][doc['id']] = doc
+
     found_docs, no_pad_ids = [], []
-    for pid, docs in project_documents.items():
+    for pid, docs_by_id in merged.items():
+        docs = list(docs_by_id.values())
         if docs:
             for doc in docs:
                 doc['project_id'] = pid
@@ -85,8 +100,12 @@ def download_documents():
 
     zip_path = os.path.join(TEMP_DIR, f"pads_{os.urandom(4).hex()}.zip")
     with zipfile.ZipFile(zip_path, 'w') as zipf:
+        seen_names = set()
         for result in results['success']:
-            zipf.write(result['path'], os.path.basename(result['path']))
+            name = os.path.basename(result['path'])
+            if name not in seen_names:
+                seen_names.add(name)
+                zipf.write(result['path'], name)
 
     return send_file(
         zip_path,

@@ -40,6 +40,42 @@ def extract_project_id(pdf_path: str, max_pages: int = 10) -> Optional[str]:
         print(f"Error processing {pdf_path}: {str(e)}")
         return None
 
+def detect_doc_prefix(pdf_path: str, max_pages: int = 3) -> Optional[str]:
+    """
+    Scan the first few pages of a PDF for known World Bank document type phrases
+    and return the corresponding filename prefix ('PAD' or 'PP'), or None if
+    no recognised type is found.
+
+    Checked in priority order so the most specific phrases win.
+    """
+    # (pattern, prefix) — checked in order; first match wins
+    TYPE_PATTERNS = [
+        (re.compile(r'program\s+appraisal\s+document', re.IGNORECASE), 'PAD'),
+        (re.compile(r'project\s+appraisal\s+document', re.IGNORECASE),  'PAD'),
+        (re.compile(r'restructuring\s+paper',           re.IGNORECASE), 'PP'),
+        (re.compile(r'project\s+paper',                 re.IGNORECASE), 'PP'),
+        (re.compile(r'additional\s+financing',          re.IGNORECASE), 'PP'),
+    ]
+
+    try:
+        with open(pdf_path, 'rb') as f:
+            reader = PdfReader(f)
+            pages_to_search = min(len(reader.pages), max_pages)
+            text = ' '.join(
+                (reader.pages[i].extract_text() or '') for i in range(pages_to_search)
+            )
+
+        for pattern, prefix in TYPE_PATTERNS:
+            if pattern.search(text):
+                return prefix
+
+        return None
+
+    except Exception as e:
+        print(f"Error detecting doc type in {pdf_path}: {str(e)}")
+        return None
+
+
 def rename_document_with_project_id(original_path: str, output_dir: str) -> Optional[str]:
     """
     Rename a document file based on the project ID extracted from its content.

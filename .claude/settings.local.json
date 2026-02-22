@@ -13,7 +13,11 @@
       "Bash(py -3 -c:*)",
       "Bash(py:*)",
       "Bash(py -3.11 -c:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(cd:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(where node:*)",
+      "WebFetch(domain:search.worldbank.org)"
     ]
   }
 }
