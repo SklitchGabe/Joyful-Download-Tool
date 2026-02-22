@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(node -e \"\nconst chunks=[]; process.stdin.on\\(''data'',c=>chunks.push\\(c\\)\\); process.stdin.on\\(''end'',\\(\\)=>{\n  const data=JSON.parse\\(Buffer.concat\\(chunks\\).toString\\(\\)\\);\n  console.log\\(''total:'', data.total\\);\n  const docs=data.documents;\n  Object.keys\\(docs\\).forEach\\(k=>{\n    if\\(k===''facets''\\) return;\n    const v=docs[k];\n    console.log\\(''  docty=''+v.docty+'' | guid=''+v.guid+'' | pdfurl=''+!!v.pdfurl\\);\n  }\\);\n}\\);\")",
+      "Bash(where:*)",
+      "Bash(\"C:/Users/gabri/AppData/Local/Programs/Python/Python313/python.exe\" -c:*)",
+      "Bash(\"C:/Users/gabri/AppData/Local/Programs/Python/Python313/python.exe\" -c \"\nimport json, sys\ndata = json.load\\(sys.stdin\\)\nprint\\(''via qterm: total='', data.get\\(''total'', 0\\)\\)\ndocs = data.get\\(''documents'', {}\\)\nfor k, v in list\\(docs.items\\(\\)\\)[:5]:\n    if k == ''facets'': continue\n    print\\(''  docty=%s | projectid=%s'' % \\(v.get\\(''docty'',''?''\\), v.get\\(''projectid'',''?''\\)\\)\\)\n\")",
+      "Bash(\"C:/Users/gabri/AppData/Local/Programs/Python/Python313/python.exe\" -c \"\nimport json, sys\ndata = json.load\\(sys.stdin\\)\nprint\\(''total:'', data.get\\(''total'', 0\\)\\)\nprojs = data.get\\(''projects'', {}\\)\nfor k, v in list\\(projs.items\\(\\)\\)[:3]:\n    if not isinstance\\(v, dict\\): continue\n    print\\(''  id=%s | name=%s | status=%s'' % \\(v.get\\(''id'',''?''\\), v.get\\(''project_name'',''?''\\)[:60], v.get\\(''status'',''?''\\)\\)\\)\n\")",
+      "Bash(py -3:*)",
+      "Bash(py -3 -c:*)",
+      "Bash(py:*)",
+      "Bash(py -3.11 -c:*)",
+      "Bash(dir:*)"
+    ]
+  }
+}
