@@ -132,6 +132,31 @@ body {
   border: 1px solid var(--error);
 }
 
+/* ─── Success toast ──────────────────────────────────────────── */
+.success-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--dark-surface);
+  border: 1px solid var(--success);
+  border-left: 4px solid var(--success);
+  color: var(--success);
+  padding: 0.8rem 1.4rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  z-index: 9999;
+  animation: toast-in 0.3s ease both, toast-out 0.4s ease 3.6s both;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(1.5rem); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateX(1.5rem); }
+}
+
 .warning-messages {
   display: flex;
   flex-direction: column;

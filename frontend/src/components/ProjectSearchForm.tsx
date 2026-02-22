@@ -24,7 +24,7 @@ function ProjectSearchForm({ onSearch, loading }: ProjectSearchFormProps) {
 
   return (
     <div className="search-form">
-      <h2>World Bank PAD Downloader</h2>
+      <h2>Search by Project ID</h2>
       <p className="form-description">
         Enter World Bank project IDs to find and download their Project Appraisal Documents (PADs).
         IDs must be in the format P123456 — one per line, or separated by commas or spaces.
@@ -74,8 +74,12 @@ function ProjectSearchForm({ onSearch, loading }: ProjectSearchFormProps) {
           </div>
         </div>
 
-        <button type="submit" className="search-button" disabled={loading || !projectIds.trim()}>
-          {loading ? 'Searching...' : 'Find PADs'}
+        <button
+          type="submit"
+          className={`search-button${loading ? ' is-loading' : ''}`}
+          disabled={loading || !projectIds.trim()}
+        >
+          {loading ? 'Searching…' : 'Find PADs'}
         </button>
       </form>
     </div>

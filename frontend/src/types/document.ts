@@ -4,6 +4,7 @@ export interface Document {
   title?: string;
   docdt?: string;
   count?: string;
+  docty?: string;
   abstracts?: {
     'cdata!'?: string;
   };

@@ -1,4 +1,5 @@
 import os
+import threading
 import requests
 import json
 from tqdm import tqdm
@@ -19,9 +20,28 @@ class WorldBankDocDownloader:
         self.output_dir = output_dir
         self.max_workers = max_workers
         self.rate_limit = rate_limit
-        
+        self._path_lock = threading.Lock()
+
         # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
+
+    def _claim_path(self, stem, file_format):
+        """Atomically reserve a unique file path by creating an empty placeholder.
+
+        Holding the lock while both checking existence and creating the file
+        eliminates the check-then-act race that caused multiple threads to claim
+        the same path simultaneously.
+        """
+        with self._path_lock:
+            filename = f"{stem}.{file_format}"
+            file_path = os.path.join(self.output_dir, filename)
+            counter = 1
+            while os.path.exists(file_path):
+                filename = f"{stem}_{counter}.{file_format}"
+                file_path = os.path.join(self.output_dir, filename)
+                counter += 1
+            open(file_path, 'wb').close()   # placeholder — real content written next
+        return file_path
     
     def search_documents(self, query="", doc_type=None, country=None, topic=None,
                         from_date=None, to_date=None, language=None, max_results=100):
@@ -182,113 +202,109 @@ class WorldBankDocDownloader:
                         safe_title = "".join(c if c.isalnum() else "_" for c in title)
                         stem = f"{doc_id}_{safe_title[:50]}"
 
-                    filename = f"{stem}.{file_format}"
-                    file_path = os.path.join(self.output_dir, filename)
-                    # Avoid collisions if multiple docs share the same type+project
-                    counter = 1
-                    while os.path.exists(file_path):
-                        filename = f"{stem}_{counter}.{file_format}"
-                        file_path = os.path.join(self.output_dir, filename)
-                        counter += 1
-                    
-                    # Download the file
-                    response = requests.get(file_url, stream=True)
-                    
-                    # Skip to next format if file not found or other error
-                    if response.status_code != 200:
-                        print(f"Format {file_format} not available (status: {response.status_code})")
-                        continue
-                    
-                    # Check content type for validation
-                    content_type = response.headers.get('content-type', '').lower()
-                    content_type_valid = False
-                    
-                    # Validate content type based on format
-                    if file_format == 'pdf' and ('application/pdf' in content_type or 'pdf' in content_type):
-                        content_type_valid = True
-                    elif file_format == 'docx' and ('application/vnd.openxmlformats-officedocument.wordprocessingml.document' in content_type):
-                        content_type_valid = True
-                    elif file_format == 'doc' and ('application/msword' in content_type):
-                        content_type_valid = True
-                    elif file_format == 'tiff' and ('image/tiff' in content_type):
-                        content_type_valid = True
-                    
-                    if not content_type_valid:
-                        print(f"Warning: Document {doc_id} may not be a {file_format.upper()} (content-type: {content_type})")
-                    
-                    # Download the file
-                    total_size = int(response.headers.get('content-length', 0))
-                    with open(file_path, 'wb') as f:
-                        with tqdm(total=total_size, unit='B', unit_scale=True, 
-                                 desc=f"Downloading {filename}", leave=False) as pbar:
-                            for chunk in response.iter_content(chunk_size=8192):
-                                if chunk:
-                                    f.write(chunk)
-                                    pbar.update(len(chunk))
-                    
-                    # Format-specific file validation
-                    valid_file = False
-                    
-                    if file_format == 'pdf':
-                        # Validate PDF header
-                        with open(file_path, 'rb') as f:
-                            header = f.read(4)
-                            if header == b'%PDF':
-                                valid_file = True
-                    elif file_format == 'docx':
-                        # Basic check for DOCX (ZIP archive with specific structure)
-                        with open(file_path, 'rb') as f:
-                            header = f.read(4)
-                            if header == b'PK\x03\x04':
-                                valid_file = True
-                    elif file_format == 'doc':
-                        # Basic check for DOC magic number
-                        with open(file_path, 'rb') as f:
-                            header = f.read(8)
-                            if header[:2] == b'\xD0\xCF':
-                                valid_file = True
-                    elif file_format == 'tiff':
-                        # Check TIFF header
-                        with open(file_path, 'rb') as f:
-                            header = f.read(4)
-                            if header == b'II*\x00' or header == b'MM\x00*':
-                                valid_file = True
-                    
-                    if not valid_file:
-                        print(f"Downloaded file is not a valid {file_format.upper()}")
-                        os.remove(file_path)
+                    # Atomically claim a unique path — eliminates the race condition
+                    # where two threads both saw the same path as free and overwrote
+                    # each other, causing one file to silently vanish from the zip.
+                    file_path = self._claim_path(stem, file_format)
+
+                    try:
+                        # Download the file
+                        response = requests.get(file_url, stream=True)
+
+                        # Release the claim and try the next format if unavailable
+                        if response.status_code != 200:
+                            print(f"Format {file_format} not available (status: {response.status_code})")
+                            os.remove(file_path)
+                            file_path = None
+                            continue
+
+                        # Check content type for validation
+                        content_type = response.headers.get('content-type', '').lower()
+                        content_type_valid = False
+
+                        if file_format == 'pdf' and ('application/pdf' in content_type or 'pdf' in content_type):
+                            content_type_valid = True
+                        elif file_format == 'docx' and ('application/vnd.openxmlformats-officedocument.wordprocessingml.document' in content_type):
+                            content_type_valid = True
+                        elif file_format == 'doc' and ('application/msword' in content_type):
+                            content_type_valid = True
+                        elif file_format == 'tiff' and ('image/tiff' in content_type):
+                            content_type_valid = True
+
+                        if not content_type_valid:
+                            print(f"Warning: Document {doc_id} may not be a {file_format.upper()} (content-type: {content_type})")
+
+                        # Write content — overwrites the empty placeholder
+                        total_size = int(response.headers.get('content-length', 0))
+                        with open(file_path, 'wb') as f:
+                            with tqdm(total=total_size, unit='B', unit_scale=True,
+                                     desc=f"Downloading {os.path.basename(file_path)}", leave=False) as pbar:
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    if chunk:
+                                        f.write(chunk)
+                                        pbar.update(len(chunk))
+
+                        # Format-specific file validation
+                        valid_file = False
+                        if file_format == 'pdf':
+                            with open(file_path, 'rb') as f:
+                                if f.read(4) == b'%PDF':
+                                    valid_file = True
+                        elif file_format == 'docx':
+                            with open(file_path, 'rb') as f:
+                                if f.read(4) == b'PK\x03\x04':
+                                    valid_file = True
+                        elif file_format == 'doc':
+                            with open(file_path, 'rb') as f:
+                                if f.read(8)[:2] == b'\xD0\xCF':
+                                    valid_file = True
+                        elif file_format == 'tiff':
+                            with open(file_path, 'rb') as f:
+                                h = f.read(4)
+                                if h == b'II*\x00' or h == b'MM\x00*':
+                                    valid_file = True
+
+                        if not valid_file:
+                            print(f"Downloaded file is not a valid {file_format.upper()}")
+                            os.remove(file_path)
+                            file_path = None
+                            continue
+
+                        # Fallback: if metadata didn't produce a structured name, scan
+                        # the PDF itself for a project ID and document type.
+                        if file_format == 'pdf' and not (prefix and project_id):
+                            pdf_pid    = extract_project_id(file_path, max_pages=10)
+                            pdf_prefix = detect_doc_prefix(file_path, max_pages=3) if pdf_pid else None
+                            if pdf_pid and pdf_prefix:
+                                print(f"PDF fallback naming for document {doc_id}: {pdf_prefix}_{pdf_pid}")
+                                new_stem = f"{pdf_prefix}_{pdf_pid}"
+                                # Use the lock for the rename target too
+                                with self._path_lock:
+                                    new_filename = f"{new_stem}.pdf"
+                                    new_path = os.path.join(self.output_dir, new_filename)
+                                    counter = 1
+                                    while os.path.exists(new_path):
+                                        new_filename = f"{new_stem}_{counter}.pdf"
+                                        new_path = os.path.join(self.output_dir, new_filename)
+                                        counter += 1
+                                    os.rename(file_path, new_path)
+                                file_path = new_path
+
+                        return {
+                            "success": True,
+                            "doc_id": doc_id,
+                            "path": file_path,
+                            "format": file_format
+                        }
+
+                    except Exception as e:
+                        # Clean up any claimed placeholder before trying the next format
+                        if file_path and os.path.exists(file_path):
+                            os.remove(file_path)
+                        file_path = None
+                        print(f"Error trying {file_format} format for document {doc_id}: {str(e)}")
                         continue
 
-                    # Fallback: if metadata didn't produce a structured name, scan
-                    # the PDF itself for a project ID and document type.
-                    # Only attempted for PDFs — the text is reliably readable.
-                    if file_format == 'pdf' and not (prefix and project_id):
-                        pdf_pid    = extract_project_id(file_path, max_pages=10)
-                        pdf_prefix = detect_doc_prefix(file_path, max_pages=3) if pdf_pid else None
-                        if pdf_pid and pdf_prefix:
-                            print(
-                                f"PDF fallback naming for document {doc_id}: "
-                                f"{pdf_prefix}_{pdf_pid}"
-                            )
-                            new_stem = f"{pdf_prefix}_{pdf_pid}"
-                            new_filename = f"{new_stem}.pdf"
-                            new_path = os.path.join(self.output_dir, new_filename)
-                            counter = 1
-                            while os.path.exists(new_path):
-                                new_filename = f"{new_stem}_{counter}.pdf"
-                                new_path = os.path.join(self.output_dir, new_filename)
-                                counter += 1
-                            os.rename(file_path, new_path)
-                            file_path = new_path
-
-                    # If we got here, we have a valid file
-                    return {
-                        "success": True,
-                        "doc_id": doc_id,
-                        "path": file_path,
-                        "format": file_format
-                    }
-                    
                 except Exception as e:
                     print(f"Error trying {file_format} format for document {doc_id}: {str(e)}")
                     continue
@@ -411,6 +427,99 @@ class WorldBankDocDownloader:
             print(f"Total documents found: {len(all_documents)}")
         return all_documents
     
+    def download_single_url(self, url):
+        """Download a file directly from a URL without going through the search API.
+
+        Uses the filename embedded in the URL as the initial stem, then applies
+        the same PDF content-detection fallback used by download_document() so
+        that files are renamed to PAD_PXXXXXX / PP_PXXXXXX when possible.
+        """
+        file_path = None
+        try:
+            url_path = url.rstrip('/').split('/')[-1]
+            if '.' in url_path:
+                name_part, ext = url_path.rsplit('.', 1)
+                file_format = ext.lower()
+            else:
+                name_part = url_path or 'document'
+                file_format = 'pdf'
+
+            safe_stem = "".join(
+                c if c.isalnum() or c in '-_' else '_' for c in name_part
+            )[:100] or 'document'
+
+            file_path = self._claim_path(safe_stem, file_format)
+
+            try:
+                response = requests.get(url, stream=True, timeout=60)
+                if response.status_code != 200:
+                    os.remove(file_path)
+                    return {"success": False, "url": url,
+                            "error": f"HTTP {response.status_code}"}
+
+                total_size = int(response.headers.get('content-length', 0))
+                with open(file_path, 'wb') as f:
+                    with tqdm(total=total_size, unit='B', unit_scale=True,
+                              desc=f"Downloading {os.path.basename(file_path)}",
+                              leave=False) as pbar:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+                                pbar.update(len(chunk))
+
+                if file_format == 'pdf':
+                    with open(file_path, 'rb') as f:
+                        if f.read(4) != b'%PDF':
+                            os.remove(file_path)
+                            return {"success": False, "url": url,
+                                    "error": "Downloaded file is not a valid PDF"}
+
+                    # Try structured naming from PDF content
+                    pdf_pid    = extract_project_id(file_path, max_pages=10)
+                    pdf_prefix = detect_doc_prefix(file_path, max_pages=3) if pdf_pid else None
+                    if pdf_pid and pdf_prefix:
+                        new_stem = f"{pdf_prefix}_{pdf_pid}"
+                        with self._path_lock:
+                            new_filename = f"{new_stem}.pdf"
+                            new_path = os.path.join(self.output_dir, new_filename)
+                            counter = 1
+                            while os.path.exists(new_path):
+                                new_filename = f"{new_stem}_{counter}.pdf"
+                                new_path = os.path.join(self.output_dir, new_filename)
+                                counter += 1
+                            os.rename(file_path, new_path)
+                        file_path = new_path
+
+                return {"success": True, "url": url, "path": file_path}
+
+            except Exception as e:
+                if file_path and os.path.exists(file_path):
+                    os.remove(file_path)
+                return {"success": False, "url": url, "error": str(e)}
+
+        except Exception as e:
+            if file_path and os.path.exists(file_path):
+                os.remove(file_path)
+            return {"success": False, "url": url, "error": str(e)}
+
+    def download_from_urls(self, urls):
+        """Download files directly from a list of URLs in parallel."""
+        results = {"success": [], "failed": []}
+
+        with tqdm(total=len(urls), desc="Downloading from URLs") as pbar:
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                futures = {executor.submit(self.download_single_url, url): url
+                           for url in urls}
+                for future in futures:
+                    result = future.result()
+                    if result["success"]:
+                        results["success"].append(result)
+                    else:
+                        results["failed"].append(result)
+                    pbar.update(1)
+
+        return results
+
     def bulk_download_by_projects(self, project_documents):
         """Download documents organized by project ID.
         

@@ -1,0 +1,185 @@
+/* ─── Strip container ────────────────────────────────────────── */
+.loading-strip {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.9rem 1.4rem;
+  background: linear-gradient(135deg, var(--dark-surface) 0%, var(--dark-surface-lighter) 100%);
+  border: 1px solid var(--input-border);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 8px;
+  margin: 1rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Sweeping shimmer behind the whole strip */
+.loading-strip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(58, 134, 255, 0.05), transparent);
+  animation: ls-shim 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ls-shim {
+  to { left: 160%; }
+}
+
+/* ─── Radar circle ───────────────────────────────────────────── */
+.ls-radar {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+/* Rotating sweep — conic gradient spins to create the arm + trail */
+.ls-radar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent            0deg,
+    rgba(58,134,255,0.03)  160deg,
+    rgba(58,134,255,0.15)  280deg,
+    rgba(58,134,255,0.50)  340deg,
+    rgba(131,56,236,0.80)  354deg,
+    rgba(58,134,255,0.50)  360deg
+  );
+  animation: ls-sweep 2s linear infinite;
+}
+@keyframes ls-sweep {
+  to { transform: rotate(360deg); }
+}
+
+/* Crosshairs */
+.ls-radar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    linear-gradient(to right,
+      transparent calc(50% - 0.5px),
+      rgba(58,134,255,0.18) calc(50% - 0.5px) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom,
+      transparent calc(50% - 0.5px),
+      rgba(58,134,255,0.18) calc(50% - 0.5px) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px));
+  pointer-events: none;
+}
+
+/* Rings */
+.ls-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(58, 134, 255, 0.2);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.ls-ring-outer { width: 54px; height: 54px; }
+.ls-ring-inner { width: 28px; height: 28px; }
+
+/* Center dot */
+.ls-core {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px 2px rgba(58, 134, 255, 0.65);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+}
+
+/* Blips — appear at fixed positions as if the arm just swept over them */
+.ls-blip {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 6px 2px rgba(58, 134, 255, 0.75);
+  z-index: 3;
+  opacity: 0;
+  animation: ls-blip 2s ease-in-out infinite;
+}
+.ls-blip-a { top: 11px; left: 39px; animation-delay: 0.35s; }
+.ls-blip-b { top: 41px; left: 43px; animation-delay: 1.00s; }
+.ls-blip-c { top: 37px; left:  8px; animation-delay: 1.62s; }
+
+@keyframes ls-blip {
+  0%        { opacity: 0;   transform: scale(0.6); }
+  6%        { opacity: 1;   transform: scale(1.7); }
+  24%       { opacity: 0.6; transform: scale(1.0); }
+  42%, 100% { opacity: 0;   transform: scale(0.8); }
+}
+
+/* ─── Text body ──────────────────────────────────────────────── */
+.ls-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.ls-label {
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  opacity: 0.9;
+}
+
+.ls-message {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: ls-msg-in 0.3s ease both;
+}
+@keyframes ls-msg-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* Scanning beam */
+.ls-track {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.1rem;
+}
+.ls-track-beam {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-primary),
+    var(--accent-secondary),
+    transparent
+  );
+  animation: ls-beam 1.9s ease-in-out infinite;
+  transform: translateX(-160%);
+}
+@keyframes ls-beam {
+  to { transform: translateX(400%); }
+}
